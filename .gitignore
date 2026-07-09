@@ -1,0 +1,6 @@
+.verify/node_modules/
+.verify/*.png
+.verify/dl*/
+.verify/package-lock.json
+.DS_Store
+.claude/

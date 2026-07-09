@@ -1,0 +1,179 @@
+<body>
+<header class="wrap">
+  <div class="hd-row">
+    <div class="hd-top">
+      <h1 id="title"><span class="hl">THE GLASS</span> ENGINE</h1>
+      <p class="tag">See inside the machine.</p>
+    </div>
+    <div class="hd-right">
+      <button class="sound-btn" id="soundBtn" aria-pressed="false" aria-label="sound, off" title="sound">&#215;&#9836;</button>
+    </div>
+  </div>
+  <div class="gauges" id="gauges" role="group" aria-label="module progress gauges"></div>
+</header>
+
+<nav class="tabs" aria-label="modules" id="tabs"></nav>
+
+<main class="wrap">
+
+  <!-- ============ 01 PREDICT ============ -->
+  <section class="mod on" id="mod0" aria-labelledby="h-m0">
+    <h2 id="h-m0"><span class="h-num">MODULE 01</span>Predict the next word</h2>
+    <p class="cap">A live language model runs right here, and it knows one trick: given a word, guess the next. Pick a starter and watch it think.</p>
+    <div class="panel">
+      <div class="chips" id="starters"></div>
+      <div class="gen-out" id="genOut" aria-live="polite"></div>
+      <div class="bars" id="bars"></div>
+      <div class="row">
+        <button class="btn btn-primary" id="rollBtn">Roll the dice</button>
+        <button class="btn" id="autoBtn">Auto-finish</button>
+        <button class="btn" id="resetBtn">Start over</button>
+      </div>
+      <div class="temp">
+        <div class="temp-head">
+          <span>temperature <span class="mono" id="tVal">1.00</span></span>
+          <span class="t-word" id="tWord">balanced</span>
+        </div>
+        <div class="temp-row">
+          <span class="t-end">boring</span>
+          <input type="range" id="tempSlider" min="0.2" max="2" step="0.01" value="1" aria-label="temperature, from boring at 0.2 to unhinged at 2.0">
+          <span class="t-end">unhinged</span>
+        </div>
+      </div>
+    </div>
+    <p class="foot" id="predictFoot"></p>
+    <div class="checkpoint" data-m="0"></div>
+  </section>
+
+  <!-- ============ 02 TOKENS ============ -->
+  <section class="mod" id="mod1" aria-labelledby="h-m1">
+    <h2 id="h-m1"><span class="h-num">MODULE 02</span>The engine eats numbers</h2>
+    <p class="cap">The engine never sees your letters, only numbered chunks called tokens. Type and watch the chopper work.</p>
+    <div class="panel">
+      <textarea id="tokIn" rows="3" aria-label="text to tokenize" placeholder="type anything here">the robot ate my homework at berkeley</textarea>
+      <div class="chips">
+        <button class="chip" id="tryStraw">try strawberry</button>
+      </div>
+      <div class="tokwrap" id="tokOut"></div>
+      <div class="tok-count mono" id="tokCount" aria-live="polite"></div>
+      <div class="ctx">
+        <div class="ctx-track"><div class="ctx-fill" id="ctxFill"></div></div>
+        <div class="ctx-lab"><span>your text</span><span class="mono" id="ctxPct"></span></div>
+      </div>
+      <p class="cap" id="strawCap" hidden><strong>See it?</strong> The model gets <span class="mono">straw</span> and <span class="mono">berry</span>, two chunks with ID numbers. It never sees the letters inside, which is why counting the r's in strawberry is famously hard.</p>
+    </div>
+    <p class="foot">Real tokenizers learn their chunk list and ID numbers from mountains of text. These ones are hand-made approximations, but the lesson is exact: the model reads numbers, never letters.</p>
+    <div class="checkpoint" data-m="1"></div>
+  </section>
+
+  <!-- ============ 03 MEANING ============ -->
+  <section class="mod" id="mod2" aria-labelledby="h-m2">
+    <h2 id="h-m2"><span class="h-num">MODULE 03</span>A map where distance is meaning</h2>
+    <p class="cap">Every word the model knows lives at a point in space, and near means similar. Tap any word to light its five closest neighbors, drag to look around.</p>
+    <div class="panel">
+      <div class="mapwrap" id="mapWrap">
+        <svg id="mapSvg" role="img" aria-label="scatter map of words where similar words sit close together"></svg>
+        <span class="map-hint">drag to pan &#183; tap a word</span>
+      </div>
+      <p class="cap" id="nbCap" aria-live="polite"></p>
+    </div>
+    <div class="panel">
+      <h3 style="font-size:0.95rem">Word math</h3>
+      <p class="cap">Directions mean something too. Take a word, subtract one idea, add another.</p>
+      <div class="wm-row">
+        <select id="wmA" aria-label="word A"></select>
+        <span class="op mono" aria-hidden="true">-</span>
+        <select id="wmB" aria-label="minus word B"></select>
+        <span class="op mono" aria-hidden="true">+</span>
+        <select id="wmC" aria-label="plus word C"></select>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" id="wmGo">Compute</button>
+      </div>
+      <div class="chips" id="wmPresets"></div>
+      <p class="wm-out" id="wmOut" aria-live="polite"></p>
+    </div>
+    <p class="foot">Real models use thousands of dimensions, not two. This map is a flattened cartoon of the idea, and the idea is real.</p>
+    <div class="checkpoint" data-m="2"></div>
+  </section>
+
+  <!-- ============ 04 ATTENTION ============ -->
+  <section class="mod" id="mod3" aria-labelledby="h-m3">
+    <h2 id="h-m3"><span class="h-num">MODULE 04</span>Every word looks at every other word</h2>
+    <p class="cap">Words like "it" stay empty until every word has looked at every other word, and the machine decides from that. You go first.</p>
+    <div class="panel">
+      <div class="chips" id="attPresets"></div>
+      <p class="cap" id="attPrompt"></p>
+      <div class="att-stage">
+        <svg class="att-svg" id="attSvg" aria-hidden="true"></svg>
+        <div class="att-words" id="attWords"></div>
+      </div>
+      <div class="row" id="attEndings" role="group" aria-label="choose the last word"></div>
+      <p class="att-verdict" id="attVerdict" aria-live="polite"></p>
+      <div class="row">
+        <button class="btn" id="gridBtn" aria-expanded="false">See the full grid</button>
+      </div>
+      <div class="att-grid" id="attGrid" hidden></div>
+      <div class="freeplay">
+        <h3 style="font-size:0.95rem; margin-top:14px">Free play</h3>
+        <p class="cap">Type any short sentence and get a rough sketch of its attention grid.</p>
+        <div class="row">
+          <input class="txt" id="fpIn" maxlength="60" placeholder="the dog chased the ball because it bounced" aria-label="sentence for the free play heatmap">
+          <button class="btn" id="fpGo">Route it</button>
+        </div>
+        <div class="att-grid" id="fpGrid" aria-live="polite"></div>
+      </div>
+    </div>
+    <p class="foot">These weights are hand-tuned for teaching. A real transformer learns millions of them, in many layers, all at once. The routing idea is exactly this.</p>
+    <div class="checkpoint" data-m="3"></div>
+  </section>
+
+  <!-- ============ 05 LOOP ============ -->
+  <section class="mod" id="mod4" aria-labelledby="h-m4">
+    <h2 id="h-m4"><span class="h-num">MODULE 05</span>The engine is not the car</h2>
+    <p class="cap">A model only predicts text; tools plus a check-your-work loop make it an agent. Step through a replay of an agent diagnosing a robot, just like yesterday's lab.</p>
+    <div class="panel">
+      <p class="loop-q"><span class="mono">vex-red</span> drives for about a minute, then veers left and stops. What's wrong?</p>
+      <div class="steps" id="loopSteps"></div>
+      <div class="row">
+        <button class="btn btn-primary" id="loopNext">Next step</button>
+        <button class="btn" id="loopAgain">Run it again</button>
+      </div>
+      <p class="loop-close" id="loopClose" hidden>Model = engine. Agent = engine + tools + this loop.</p>
+    </div>
+    <div class="checkpoint" data-m="4"></div>
+  </section>
+
+</main>
+
+<div class="lic-banner" id="licBanner" hidden>
+  <button class="btn btn-primary" id="licOpen">Claim your Engine License</button>
+</div>
+
+<div class="modal" id="licModal" hidden role="dialog" aria-modal="true" aria-labelledby="licH">
+  <div class="modal-inner">
+    <div class="lic-form">
+      <button class="modal-close" id="licClose" aria-label="close">&#215;</button>
+      <h3 id="licH">All five gauges full. Name goes on the card.</h3>
+      <input id="licName" maxlength="24" placeholder="your name" autocomplete="off" aria-label="your name for the license">
+      <div class="card" id="licCard">
+        <div class="card-strip"></div>
+        <div class="card-body">
+          <div class="card-eng">ROBOLABS &#183; PIT PASS &#183; NO. GE-2026</div>
+          <div class="card-title">THE GLASS ENGINE</div>
+          <div class="card-name" id="cardName">YOUR NAME</div>
+          <div class="card-cert">Certified Engine-Opener</div>
+          <div class="card-meta"><span id="cardDate"></span><br>Robolabs Summer Academy 2026 &#183; UC Berkeley</div>
+          <div class="card-gauges" id="cardGauges" aria-label="five full gauges"></div>
+        </div>
+        <div class="card-strip"></div>
+      </div>
+      <p class="lic-nudge"><strong>Screenshot this.</strong> It's real now.</p>
+      <div class="row" style="justify-content:center">
+        <button class="btn" id="licPng">Download as PNG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="pagefoot wrap">Built by an AI coding agent for Robolabs Summer Academy 2026</footer>
