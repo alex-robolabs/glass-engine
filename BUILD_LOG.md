@@ -88,3 +88,7 @@ Every acceptance checklist line, verified by scripted headless Chrome runs (`.ve
 Stretch goals, all five, verified: PNG download saves a real license card (long names shrink to fit), free-play heatmap renders for arbitrary sentences, idle needle flutter runs (and dies under reduced motion), sound is mute-by-default with a working toggle and iOS resume handling, and five taps on the title do something worth finding.
 
 Build artifacts: `.src/` holds the source parts and the build script; `.verify/` holds the checklist harness and screenshots. The deliverable `glass-engine.html` is assembled by `node .src/build.js`, which refuses to emit dashes or oversized files.
+
+## Deployment
+
+Deployed to GitHub Pages: https://alex-robolabs.github.io/glass-engine/ (repo `alex-robolabs/glass-engine`, `index.html` is a byte-identical copy of `glass-engine.html`, SHA-256 verified against the served bytes). Live smoke test from headless Chrome at phone width: one request total, zero third-party, interactive in ~275 ms, probability bars render, no console errors. `qr-code.png` in the repo points at the URL and was machine-decoded to confirm it scans. Since the app is one self-contained file, students who load it once keep a working copy even if the venue wifi collapses mid-lecture.
