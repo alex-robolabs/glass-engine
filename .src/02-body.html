@@ -128,6 +128,27 @@
     <div class="checkpoint" data-m="3"></div>
   </section>
 
+  <!-- ============ gate: lecture pacing lock screen ============ -->
+  <section class="mod" id="modLock" aria-labelledby="lockH">
+    <div class="panel lock-panel" id="lockPanel">
+      <svg class="lock-art" id="lockArt" viewBox="0 0 64 64" aria-hidden="true">
+        <g class="shackle">
+          <path d="M20 32 v-9 a12 12 0 0 1 24 0 v9" fill="none" stroke="#FFB020" stroke-width="5" stroke-linecap="round"/>
+        </g>
+        <rect x="14" y="31" width="36" height="26" rx="7" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+        <circle cx="32" cy="41" r="3.4" fill="#8B97A8"/>
+        <rect x="30.4" y="43" width="3.2" height="7" rx="1.6" fill="#8B97A8"/>
+      </svg>
+      <div class="lock-mod" id="lockMod"></div>
+      <h2 class="lock-msg" id="lockH">Eyes up front. The unlock word is on the screen.</h2>
+      <div class="lock-row">
+        <input class="txt" id="lockIn" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="unlock word" aria-label="unlock word">
+        <button class="btn btn-primary" id="lockGo">Unlock</button>
+      </div>
+      <p class="lock-fb" id="lockFb" aria-live="polite"></p>
+    </div>
+  </section>
+
   <!-- ============ 05 LOOP ============ -->
   <section class="mod" id="mod4" aria-labelledby="h-m4">
     <h2 id="h-m4"><span class="h-num">MODULE 05</span>The engine is not the car</h2>
@@ -176,4 +197,4 @@
   </div>
 </div>
 
-<footer class="pagefoot wrap">Built by an AI coding agent for Robolabs Summer Academy 2026</footer>
+<footer class="pagefoot wrap">Built by an AI coding agent for Robolabs Summer Academy 2026 &#183; v1.1</footer>

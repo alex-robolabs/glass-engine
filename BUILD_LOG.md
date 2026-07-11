@@ -89,6 +89,12 @@ Stretch goals, all five, verified: PNG download saves a real license card (long 
 
 Build artifacts: `.src/` holds the source parts and the build script; `.verify/` holds the checklist harness and screenshots. The deliverable `glass-engine.html` is assembled by `node .src/build.js`, which refuses to emit dashes or oversized files.
 
+## v1.1: the velvet rope
+
+Added a gating layer for lecture pacing (July 10). PREDICT is open on load; the other four modules sit behind lock screens in the nav, each with a small padlock so students can see what is coming. Every unlock word is a detail from the lecture segment just taught (the instructor says it out loud), so typing it back doubles as retrieval practice. Wrong guesses get a shake and a kind nudge with unlimited retries; right ones pop the shackle and lift the panel, both collapsed under reduced motion. A staff master word unlocks everything at once for the projector copy, and it is deliberately unhinted in the UI. No persistence, refreshing re-locks on purpose: this is attention pacing, not security, and the code comments say so.
+
+Implementation notes: the gate is a single shared lock section that the tab router shows in place of any locked module, so module content, checkpoints, gauges, and the license flow are untouched DOM and verified untouched. The lock input is 16 px (no iOS focus zoom), sits high on the page (never hidden by the phone keyboard), and normalizes case and stray whitespace. The harness gained eight gate checks and now unlocks through the real lock-screen UI before exercising gated modules; the full suite is 39 checks, all green, including the complete checkpoints-to-license run after a full unlock and a refresh-re-locks check. Footer bumped to v1.1 to confirm the deployed copy.
+
 ## Deployment
 
 Deployed to GitHub Pages: https://alex-robolabs.github.io/glass-engine/ (repo `alex-robolabs/glass-engine`, `index.html` is a byte-identical copy of `glass-engine.html`, SHA-256 verified against the served bytes). Live smoke test from headless Chrome at phone width: one request total, zero third-party, interactive in ~275 ms, probability bars render, no console errors. `qr-code.png` in the repo points at the URL and was machine-decoded to confirm it scans. Since the app is one self-contained file, students who load it once keep a working copy even if the venue wifi collapses mid-lecture.

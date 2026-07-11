@@ -36,6 +36,19 @@ function toast(msg, ms) {
 const S = { passed: [false, false, false, false, false], licensed: false };
 
 // ============================================================
+// GATE : lecture pacing, not security. The instructor says each
+// unlock word out loud during that segment of the talk, so typing
+// it back is a tiny act of retrieval practice. Refreshing re-locks
+// on purpose; the room moves at the instructor's pace.
+// ============================================================
+const GATE = {
+  words: { 1: 'strawberry', 2: 'queen', 3: 'muddy', 4: 'observe' },
+  master: 'pitboss', // staff and the projector copy; never hinted at in the UI
+  unlocked: [true, false, false, false, false],
+  target: 1,
+};
+
+// ============================================================
 // DATA
 // ============================================================
 const CORPUS = /*@DATA:corpus*/[];
@@ -166,26 +179,92 @@ function sweepGauge(i) {
 // ============================================================
 const TAB_NAMES = ['PREDICT', 'TOKENS', 'MEANING', 'ATTENTION', 'LOOP'];
 const tabBtns = [];
+function lockIconSvg() {
+  const svg = svgEl('svg', { class: 't-lock', viewBox: '0 0 12 12', width: 10, height: 10, 'aria-hidden': 'true' });
+  svg.appendChild(svgEl('path', { d: 'M3.6 5.4 v-1.5 a2.4 2.4 0 0 1 4.8 0 v1.5', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.4, 'stroke-linecap': 'round' }));
+  svg.appendChild(svgEl('rect', { x: 2.4, y: 5.2, width: 7.2, height: 5.4, rx: 1.6, fill: 'currentColor' }));
+  return svg;
+}
 function buildTabs() {
   const nav = $('tabs');
   TAB_NAMES.forEach((name, i) => {
     const b = el('button', i === 0 ? 'on' : '');
-    b.setAttribute('aria-label', name.toLowerCase() + ' module');
+    b.setAttribute('aria-label', name.toLowerCase() + ' module' + (GATE.unlocked[i] ? '' : ', locked'));
     b.appendChild(el('span', 't-dot'));
+    b.appendChild(lockIconSvg());
     b.appendChild(document.createTextNode(name));
+    if (!GATE.unlocked[i]) b.classList.add('locked');
     b.addEventListener('click', () => showTab(i));
     nav.appendChild(b);
     tabBtns.push(b);
   });
 }
 function showTab(i) {
+  const locked = !GATE.unlocked[i];
+  if (locked) { GATE.target = i; configureLock(i); }
   for (let k = 0; k < 5; k++) {
-    document.getElementById('mod' + k).classList.toggle('on', k === i);
+    document.getElementById('mod' + k).classList.toggle('on', k === i && !locked);
     tabBtns[k].classList.toggle('on', k === i);
     tabBtns[k].setAttribute('aria-current', k === i ? 'page' : 'false');
   }
+  $('modLock').classList.toggle('on', locked);
   window.scrollTo(0, 0);
-  if (i === 3) attOnShow();
+  if (i === 3 && !locked) attOnShow();
+}
+function configureLock(i) {
+  $('lockMod').textContent = 'MODULE 0' + (i + 1) + ' · ' + TAB_NAMES[i];
+  $('lockFb').className = 'lock-fb';
+  $('lockFb').textContent = '';
+  $('lockIn').value = '';
+  $('lockIn').classList.remove('bad');
+}
+function unlockModule(k) {
+  GATE.unlocked[k] = true;
+  tabBtns[k].classList.remove('locked');
+  tabBtns[k].setAttribute('aria-label', TAB_NAMES[k].toLowerCase() + ' module');
+}
+function openGate(i, master) {
+  const fb = $('lockFb');
+  fb.className = 'lock-fb';
+  fb.textContent = master ? 'Pit boss on deck. Every module is open.' : 'Unlocked.';
+  $('lockIn').blur(); // drop the phone keyboard before the reveal
+  sndSweep();
+  if (reduced()) { showTab(i); return; }
+  $('lockArt').classList.add('open');
+  setTimeout(() => $('lockPanel').classList.add('lift'), 320);
+  setTimeout(() => {
+    $('lockPanel').classList.remove('lift');
+    $('lockArt').classList.remove('open');
+    // only complete the reveal if they have not wandered off mid-animation
+    if (GATE.target === i && $('modLock').classList.contains('on')) showTab(i);
+  }, 740);
+}
+function tryUnlock() {
+  const guess = $('lockIn').value.trim().toLowerCase();
+  if (!guess) return;
+  const i = GATE.target;
+  if (guess === GATE.master) {
+    for (let k = 1; k < 5; k++) unlockModule(k);
+    openGate(i, true);
+    return;
+  }
+  if (guess === GATE.words[i]) {
+    unlockModule(i);
+    openGate(i, false);
+    return;
+  }
+  const inp = $('lockIn');
+  inp.classList.remove('bad');
+  void inp.offsetWidth; // restart the shake
+  inp.classList.add('bad');
+  const fb = $('lockFb');
+  fb.className = 'lock-fb no';
+  fb.textContent = 'Not quite. It was said out loud a minute ago.';
+  inp.select();
+}
+function buildGate() {
+  $('lockGo').addEventListener('click', tryUnlock);
+  $('lockIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
 }
 
 // ============================================================
@@ -1088,6 +1167,7 @@ function buildEgg() {
 // ---------- boot ----------
 buildGauges();
 buildTabs();
+buildGate();
 buildPredict();
 buildTokens();
 buildMeaning();

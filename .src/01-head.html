@@ -402,6 +402,26 @@ select, .txt {
 .lic-nudge { text-align: center; color: var(--dim); font-size: 0.82rem; margin-top: 12px; }
 .lic-nudge strong { color: var(--amber); }
 
+/* ================= gate (lecture pacing) ================= */
+.lock-panel { text-align: center; padding: 30px 16px 24px; transition: opacity 0.4s ease, transform 0.4s ease; }
+.lock-panel.lift { opacity: 0; transform: translateY(-18px); }
+.lock-art { width: 72px; height: auto; display: block; margin: 0 auto 12px; }
+.lock-art .shackle {
+  transform-origin: 44px 30px;
+  transform-box: view-box;
+  transition: transform 0.35s cubic-bezier(.34,1.2,.4,1);
+}
+.lock-art.open .shackle { transform: rotate(-38deg) translateY(-3px); }
+.lock-mod { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em; color: var(--teal); margin-bottom: 6px; }
+.lock-msg { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; max-width: 20rem; margin: 0 auto; }
+.lock-row { display: flex; gap: 8px; max-width: 21rem; margin: 16px auto 0; }
+.lock-fb { min-height: 1.5em; font-size: 0.88rem; margin-top: 12px; color: var(--dim); }
+.lock-fb.no { color: var(--alert); }
+.lock-row .txt.bad { border-color: var(--alert); animation: shake 0.3s ease; }
+.tabs button .t-lock { display: none; margin: 0 auto 3px; }
+.tabs button.locked .t-dot { display: none; }
+.tabs button.locked .t-lock { display: block; }
+
 /* ================= misc ================= */
 .pagefoot { color: var(--dim); font-size: 0.72rem; text-align: center; padding: 18px 0 calc(var(--nav-h) + 20px); font-family: var(--mono); }
 .toast {

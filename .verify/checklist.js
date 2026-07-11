@@ -12,6 +12,15 @@ const check = (name, ok, detail) => {
   console.log((ok ? 'PASS' : 'FAIL') + '  ' + name + (detail ? '  :: ' + detail : ''));
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// v1.1 gate: unlock all modules through the real lock-screen UI with the master word
+const unlockAll = async (pg) => {
+  await pg.evaluate(() => document.querySelectorAll('#tabs button')[1].click());
+  await pg.type('#lockIn', 'pitboss');
+  await pg.evaluate(() => document.getElementById('lockGo').click());
+  await sleep(950);
+  await pg.evaluate(() => document.querySelectorAll('#tabs button')[0].click());
+  await sleep(200);
+};
 
 (async () => {
   const b = await p.launch({ executablePath: CHROME, headless: 'new' });
@@ -37,6 +46,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const pg = await b.newPage();
     await pg.setViewport({ width: 360, height: 700 });
     await pg.goto(FILE, { waitUntil: 'load' });
+    await unlockAll(pg);
     let maxScroll = 0;
     const badTargets = [];
     for (let i = 0; i < 5; i++) {
@@ -142,6 +152,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   {
     const pg = await b.newPage();
     await pg.goto(FILE, { waitUntil: 'load' });
+    await unlockAll(pg);
     await pg.evaluate(() => document.querySelectorAll('#tabs button')[1].click());
     const r = await pg.evaluate(() => {
       const ta = document.getElementById('tokIn');
@@ -162,6 +173,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   {
     const pg = await b.newPage();
     await pg.goto(FILE, { waitUntil: 'load' });
+    await unlockAll(pg);
     await pg.evaluate(() => document.querySelectorAll('#tabs button')[2].click());
     const expect = ['queen', 'drone', 'cat'];
     for (let i = 0; i < 3; i++) {
@@ -177,6 +189,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   {
     const pg = await b.newPage();
     await pg.goto(FILE, { waitUntil: 'load' });
+    await unlockAll(pg);
     await pg.evaluate(() => document.querySelectorAll('#tabs button')[3].click());
     await sleep(400);
     const route = async () => pg.evaluate(() => (document.querySelector('#attWords .aw.ans') || {}).textContent || 'NONE');
@@ -222,6 +235,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     fs.writeFileSync(tmp, test);
     const pg = await b.newPage();
     await pg.goto('file://' + tmp, { waitUntil: 'load' });
+    await unlockAll(pg);
     await pg.evaluate(() => document.querySelectorAll('#tabs button')[3].click());
     await sleep(300);
     const chips = await pg.evaluate(() => [...document.querySelectorAll('#attPresets .chip')].map((c) => c.textContent));
@@ -245,6 +259,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const pg = await b.newPage();
     await pg.setViewport({ width: 390, height: 800 });
     await pg.goto(FILE, { waitUntil: 'load' });
+    await unlockAll(pg);
     const CORRECT = await pg.evaluate(() => CHECKPOINTS.map((c) => c.correct));
     for (let m = 0; m < 5; m++) {
       await pg.evaluate((m) => document.querySelectorAll('#tabs button')[m].click(), m);
@@ -300,12 +315,71 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     });
     check('reduced motion: needle flutter disabled', rm.flutter === 'none', rm.flutter);
     check('reduced motion: sweep/draw transitions collapsed', parseFloat(rm.sweepDur) <= 0.005, JSON.stringify(rm));
-    // word math must land instantly (no traveling dot)
+    // word math must land instantly (no traveling dot); unlock is also instant under reduced motion
+    await unlockAll(pg);
     await pg.evaluate(() => document.querySelectorAll('#tabs button')[2].click());
     await pg.evaluate(() => document.querySelectorAll('#wmPresets .chip')[0].click());
     await sleep(120);
     const fast = await pg.evaluate(() => document.getElementById('wmOut').textContent);
     check('reduced motion: word math lands without travel animation', fast.includes('lands nearest'), fast);
+    await pg.close();
+  }
+
+  // ---------- 10.5 gate: pacing lock layer (v1.1) ----------
+  {
+    const pg = await b.newPage();
+    await pg.setViewport({ width: 360, height: 700 });
+    await pg.goto(FILE, { waitUntil: 'load' });
+    const state = async () => pg.evaluate(() => ({
+      locks: [...document.querySelectorAll('#tabs button')].map((t) => t.classList.contains('locked')),
+      lockShown: document.getElementById('modLock').classList.contains('on'),
+      fb: document.getElementById('lockFb').textContent,
+    }));
+    let st = await state();
+    check('gate: modules 2-5 locked on load, predict open', JSON.stringify(st.locks) === '[false,true,true,true,true]' && !st.lockShown, JSON.stringify(st.locks));
+    // lock screen layout at 360
+    await pg.evaluate(() => document.querySelectorAll('#tabs button')[1].click());
+    await sleep(300);
+    const sw = await pg.evaluate(() => document.documentElement.scrollWidth);
+    const msg = await pg.evaluate(() => document.getElementById('lockH').textContent);
+    check('gate: lock screen shown, 360px clean', (await state()).lockShown && sw <= 360 && msg === 'Eyes up front. The unlock word is on the screen.', 'scrollWidth=' + sw);
+    // wrong word: nudge and retry
+    await pg.type('#lockIn', 'banana');
+    await pg.evaluate(() => document.getElementById('lockGo').click());
+    await sleep(300);
+    st = await state();
+    check('gate: wrong word gives the kind nudge', st.fb === 'Not quite. It was said out loud a minute ago.' && st.lockShown, st.fb);
+    // right word, case-insensitive with stray spaces
+    await pg.evaluate(() => { document.getElementById('lockIn').value = '  StRaWberry '; document.getElementById('lockGo').click(); });
+    await sleep(950);
+    st = await state();
+    const tokVisible = await pg.evaluate(() => document.getElementById('mod1').classList.contains('on'));
+    check('gate: strawberry unlocks TOKENS (case/space insensitive)', !st.locks[1] && tokVisible && !st.lockShown, JSON.stringify(st.locks));
+    // remaining three words, exercised on their own lock screens
+    const words = [[2, 'QUEEN '], [3, ' Muddy'], [4, 'observe']];
+    for (const [m, w] of words) {
+      await pg.evaluate((m) => document.querySelectorAll('#tabs button')[m].click(), m);
+      await sleep(250);
+      await pg.evaluate((w) => { document.getElementById('lockIn').value = w; document.getElementById('lockGo').click(); }, w);
+      await sleep(950);
+    }
+    st = await state();
+    check('gate: queen, muddy, observe unlock their modules', JSON.stringify(st.locks) === '[false,false,false,false,false]', JSON.stringify(st.locks));
+    // refresh re-locks
+    await pg.reload({ waitUntil: 'load' });
+    st = await state();
+    check('gate: refresh re-locks modules 2-5', JSON.stringify(st.locks) === '[false,true,true,true,true]', JSON.stringify(st.locks));
+    // master unlocks everything from any lock screen
+    await pg.evaluate(() => document.querySelectorAll('#tabs button')[4].click());
+    await sleep(250);
+    await pg.type('#lockIn', 'pitboss');
+    await pg.evaluate(() => document.getElementById('lockGo').click());
+    await sleep(950);
+    st = await state();
+    const loopVisible = await pg.evaluate(() => document.getElementById('mod4').classList.contains('on'));
+    check('gate: pitboss unlocks everything at once', JSON.stringify(st.locks) === '[false,false,false,false,false]' && loopVisible, JSON.stringify(st.locks));
+    const ver = await pg.evaluate(() => document.querySelector('.pagefoot').textContent);
+    check('footer shows v1.1', ver.includes('v1.1'), ver.slice(-20));
     await pg.close();
   }
 

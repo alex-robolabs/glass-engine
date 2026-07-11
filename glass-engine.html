@@ -402,6 +402,26 @@ select, .txt {
 .lic-nudge { text-align: center; color: var(--dim); font-size: 0.82rem; margin-top: 12px; }
 .lic-nudge strong { color: var(--amber); }
 
+/* ================= gate (lecture pacing) ================= */
+.lock-panel { text-align: center; padding: 30px 16px 24px; transition: opacity 0.4s ease, transform 0.4s ease; }
+.lock-panel.lift { opacity: 0; transform: translateY(-18px); }
+.lock-art { width: 72px; height: auto; display: block; margin: 0 auto 12px; }
+.lock-art .shackle {
+  transform-origin: 44px 30px;
+  transform-box: view-box;
+  transition: transform 0.35s cubic-bezier(.34,1.2,.4,1);
+}
+.lock-art.open .shackle { transform: rotate(-38deg) translateY(-3px); }
+.lock-mod { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em; color: var(--teal); margin-bottom: 6px; }
+.lock-msg { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; max-width: 20rem; margin: 0 auto; }
+.lock-row { display: flex; gap: 8px; max-width: 21rem; margin: 16px auto 0; }
+.lock-fb { min-height: 1.5em; font-size: 0.88rem; margin-top: 12px; color: var(--dim); }
+.lock-fb.no { color: var(--alert); }
+.lock-row .txt.bad { border-color: var(--alert); animation: shake 0.3s ease; }
+.tabs button .t-lock { display: none; margin: 0 auto 3px; }
+.tabs button.locked .t-dot { display: none; }
+.tabs button.locked .t-lock { display: block; }
+
 /* ================= misc ================= */
 .pagefoot { color: var(--dim); font-size: 0.72rem; text-align: center; padding: 18px 0 calc(var(--nav-h) + 20px); font-family: var(--mono); }
 .toast {
@@ -559,6 +579,27 @@ select, .txt {
     <div class="checkpoint" data-m="3"></div>
   </section>
 
+  <!-- ============ gate: lecture pacing lock screen ============ -->
+  <section class="mod" id="modLock" aria-labelledby="lockH">
+    <div class="panel lock-panel" id="lockPanel">
+      <svg class="lock-art" id="lockArt" viewBox="0 0 64 64" aria-hidden="true">
+        <g class="shackle">
+          <path d="M20 32 v-9 a12 12 0 0 1 24 0 v9" fill="none" stroke="#FFB020" stroke-width="5" stroke-linecap="round"/>
+        </g>
+        <rect x="14" y="31" width="36" height="26" rx="7" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+        <circle cx="32" cy="41" r="3.4" fill="#8B97A8"/>
+        <rect x="30.4" y="43" width="3.2" height="7" rx="1.6" fill="#8B97A8"/>
+      </svg>
+      <div class="lock-mod" id="lockMod"></div>
+      <h2 class="lock-msg" id="lockH">Eyes up front. The unlock word is on the screen.</h2>
+      <div class="lock-row">
+        <input class="txt" id="lockIn" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="unlock word" aria-label="unlock word">
+        <button class="btn btn-primary" id="lockGo">Unlock</button>
+      </div>
+      <p class="lock-fb" id="lockFb" aria-live="polite"></p>
+    </div>
+  </section>
+
   <!-- ============ 05 LOOP ============ -->
   <section class="mod" id="mod4" aria-labelledby="h-m4">
     <h2 id="h-m4"><span class="h-num">MODULE 05</span>The engine is not the car</h2>
@@ -607,7 +648,7 @@ select, .txt {
   </div>
 </div>
 
-<footer class="pagefoot wrap">Built by an AI coding agent for Robolabs Summer Academy 2026</footer>
+<footer class="pagefoot wrap">Built by an AI coding agent for Robolabs Summer Academy 2026 &#183; v1.1</footer>
 <script>
 'use strict';
 /* ============================================================
@@ -645,6 +686,19 @@ function toast(msg, ms) {
 
 // ---------- state ----------
 const S = { passed: [false, false, false, false, false], licensed: false };
+
+// ============================================================
+// GATE : lecture pacing, not security. The instructor says each
+// unlock word out loud during that segment of the talk, so typing
+// it back is a tiny act of retrieval practice. Refreshing re-locks
+// on purpose; the room moves at the instructor's pace.
+// ============================================================
+const GATE = {
+  words: { 1: 'strawberry', 2: 'queen', 3: 'muddy', 4: 'observe' },
+  master: 'pitboss', // staff and the projector copy; never hinted at in the UI
+  unlocked: [true, false, false, false, false],
+  target: 1,
+};
 
 // ============================================================
 // DATA
@@ -777,26 +831,92 @@ function sweepGauge(i) {
 // ============================================================
 const TAB_NAMES = ['PREDICT', 'TOKENS', 'MEANING', 'ATTENTION', 'LOOP'];
 const tabBtns = [];
+function lockIconSvg() {
+  const svg = svgEl('svg', { class: 't-lock', viewBox: '0 0 12 12', width: 10, height: 10, 'aria-hidden': 'true' });
+  svg.appendChild(svgEl('path', { d: 'M3.6 5.4 v-1.5 a2.4 2.4 0 0 1 4.8 0 v1.5', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.4, 'stroke-linecap': 'round' }));
+  svg.appendChild(svgEl('rect', { x: 2.4, y: 5.2, width: 7.2, height: 5.4, rx: 1.6, fill: 'currentColor' }));
+  return svg;
+}
 function buildTabs() {
   const nav = $('tabs');
   TAB_NAMES.forEach((name, i) => {
     const b = el('button', i === 0 ? 'on' : '');
-    b.setAttribute('aria-label', name.toLowerCase() + ' module');
+    b.setAttribute('aria-label', name.toLowerCase() + ' module' + (GATE.unlocked[i] ? '' : ', locked'));
     b.appendChild(el('span', 't-dot'));
+    b.appendChild(lockIconSvg());
     b.appendChild(document.createTextNode(name));
+    if (!GATE.unlocked[i]) b.classList.add('locked');
     b.addEventListener('click', () => showTab(i));
     nav.appendChild(b);
     tabBtns.push(b);
   });
 }
 function showTab(i) {
+  const locked = !GATE.unlocked[i];
+  if (locked) { GATE.target = i; configureLock(i); }
   for (let k = 0; k < 5; k++) {
-    document.getElementById('mod' + k).classList.toggle('on', k === i);
+    document.getElementById('mod' + k).classList.toggle('on', k === i && !locked);
     tabBtns[k].classList.toggle('on', k === i);
     tabBtns[k].setAttribute('aria-current', k === i ? 'page' : 'false');
   }
+  $('modLock').classList.toggle('on', locked);
   window.scrollTo(0, 0);
-  if (i === 3) attOnShow();
+  if (i === 3 && !locked) attOnShow();
+}
+function configureLock(i) {
+  $('lockMod').textContent = 'MODULE 0' + (i + 1) + ' · ' + TAB_NAMES[i];
+  $('lockFb').className = 'lock-fb';
+  $('lockFb').textContent = '';
+  $('lockIn').value = '';
+  $('lockIn').classList.remove('bad');
+}
+function unlockModule(k) {
+  GATE.unlocked[k] = true;
+  tabBtns[k].classList.remove('locked');
+  tabBtns[k].setAttribute('aria-label', TAB_NAMES[k].toLowerCase() + ' module');
+}
+function openGate(i, master) {
+  const fb = $('lockFb');
+  fb.className = 'lock-fb';
+  fb.textContent = master ? 'Pit boss on deck. Every module is open.' : 'Unlocked.';
+  $('lockIn').blur(); // drop the phone keyboard before the reveal
+  sndSweep();
+  if (reduced()) { showTab(i); return; }
+  $('lockArt').classList.add('open');
+  setTimeout(() => $('lockPanel').classList.add('lift'), 320);
+  setTimeout(() => {
+    $('lockPanel').classList.remove('lift');
+    $('lockArt').classList.remove('open');
+    // only complete the reveal if they have not wandered off mid-animation
+    if (GATE.target === i && $('modLock').classList.contains('on')) showTab(i);
+  }, 740);
+}
+function tryUnlock() {
+  const guess = $('lockIn').value.trim().toLowerCase();
+  if (!guess) return;
+  const i = GATE.target;
+  if (guess === GATE.master) {
+    for (let k = 1; k < 5; k++) unlockModule(k);
+    openGate(i, true);
+    return;
+  }
+  if (guess === GATE.words[i]) {
+    unlockModule(i);
+    openGate(i, false);
+    return;
+  }
+  const inp = $('lockIn');
+  inp.classList.remove('bad');
+  void inp.offsetWidth; // restart the shake
+  inp.classList.add('bad');
+  const fb = $('lockFb');
+  fb.className = 'lock-fb no';
+  fb.textContent = 'Not quite. It was said out loud a minute ago.';
+  inp.select();
+}
+function buildGate() {
+  $('lockGo').addEventListener('click', tryUnlock);
+  $('lockIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
 }
 
 // ============================================================
@@ -1699,6 +1819,7 @@ function buildEgg() {
 // ---------- boot ----------
 buildGauges();
 buildTabs();
+buildGate();
 buildPredict();
 buildTokens();
 buildMeaning();
